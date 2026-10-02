@@ -1,0 +1,31 @@
+# flightglobe
+
+A spinnable, animated globe of a personal flight history. It is a static page: open it from any static file server, no build step and no network access needed at runtime.
+
+Data is a privacy-reduced extract of an AirTrail export: flight number, airline, aircraft type, airports, times and the (simplified) track. Passengers, seats, seat classes, reasons, notes, gates, terminals and registrations are dropped.
+
+## Run
+
+    python3 build/build_data.py          # ../airtrails/airtrail.json -> web/data/flights.json
+    python3 -m http.server 8000 -d web   # then open http://localhost:8000
+
+To publish, copy the `web/` folder to any static host. `web/data/flights.json` is committed; the raw export is not part of this repo.
+
+## Using it
+
+The page opens as a time-lapse: flights play in date order, each for a few seconds (scaled gently by real duration), and the globe accumulates until it is "full". The date counter jumps between trips; the timeline at the bottom is on the true calendar axis.
+
+- Drag to spin, scroll or pinch to zoom, double-click to reset.
+- Hover (or tap) a trail for its flight number, date, route and aircraft.
+- **Follow** makes the camera track each flight; any manual drag or zoom switches it off.
+- Keys: `Space` play/pause, `←` `→` step between flights, `End` skip to the full state, `Home` restart.
+- Themes: Paper (default), Night, Natural. Choose in the corner, or open with `?theme=night`. The choice is remembered when storage is available.
+- With `prefers-reduced-motion` the page opens at the final state, paused.
+
+## Develop
+
+    node --test web/test/*.test.js && python3 -m unittest discover -s build -v
+
+Pure logic (geometry, playback clock, stats, formatting, themes, camera maths) lives in DOM-free modules under `web/src/` with Node tests; `render.js`, `interaction.js`, `ui.js` and `main.js` are the browser layer. Libraries are vendored in `web/vendor/` (see its README).
+
+Design: `docs/superpowers/specs/`. Plan: `docs/superpowers/plans/`.
