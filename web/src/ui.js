@@ -4,6 +4,7 @@ import {
 import { formatKm, flightBlurb, dateLabel } from './format.js';
 import { trackSlice, trackLengthKm } from './geo.js';
 import { airportStats, currentIndex } from './stats.js';
+import { marksFromToggle, coloursOn } from './marks.js';
 
 const SPEEDS = [0.5, 1, 2, 4];
 const SCRUB_MAX = 1000;
@@ -15,6 +16,7 @@ export function bindUi({ state, schedule, flights, cum, getLoc, setFollow }) {
   const scrub = $('scrub');
   const followBox = $('follow');
   const gcBox = $('gc');
+  const coloursBox = $('colours');
   const fnumEl = $('fnum');
   const fsubEl = $('fsub');
   const playheadEl = $('playhead');
@@ -66,6 +68,8 @@ export function bindUi({ state, schedule, flights, cum, getLoc, setFollow }) {
   });
   followBox.addEventListener('change', () => setFollow(followBox.checked));
   gcBox.addEventListener('change', () => { state.greatCircle = gcBox.checked; });
+  coloursBox.checked = coloursOn(state.marks);
+  coloursBox.addEventListener('change', () => { state.marks = marksFromToggle(coloursBox.checked); });
 
   let wasPlaying = false;
   scrub.addEventListener('pointerdown', () => { wasPlaying = state.playing; state.playing = false; });
