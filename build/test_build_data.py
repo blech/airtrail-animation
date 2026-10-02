@@ -90,7 +90,7 @@ def make_flight(**over):
         "airline": {"name": "United", "icao": "UAL", "iata": "UA", "iconPath": "p", "sourceId": "s"},
         "passengers": [{"userId": "u123secret", "guestName": None, "seat": "window", "seatNumber": "32F",
                         "seatClass": "economy", "flightReason": "leisure",
-                        "user": {"id": "u123secret", "displayName": "Paul Mison", "username": "paulmison"}}],
+                        "user": {"id": "u123secret", "displayName": "Test Person", "username": "testperson"}}],
         "track": {"coordinates": track, "times": [p[3] for p in track], "trackDeg": [1, 2, 3, 4],
                   "sourceName": "x.csv", "sourceFormat": "csv", "groundSpeedKt": [1, 2, 3, 4]},
     }
@@ -111,7 +111,7 @@ class BuildFlightTests(unittest.TestCase):
         out = bd.build_flight(make_flight())
         self.assertEqual(set(out) - {"id"}, ALLOWED_TOP - {"id"})
         blob = json.dumps(out)
-        for secret in ("Paul Mison", "paulmison", "u123secret", "32F", "N12345", "private note",
+        for secret in ("Test Person", "testperson", "u123secret", "32F", "N12345", "private note",
                        "B35A", "Secret Name", "economy", "leisure"):
             self.assertNotIn(secret, blob)
         self.assertEqual(out["flightNumber"], "UA123")
