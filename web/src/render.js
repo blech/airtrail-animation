@@ -35,6 +35,10 @@ export class GlobeRenderer {
     return Math.min(this.w, this.h * 0.86) * 0.42;
   }
 
+  trackOf(f, gc) { return gc ? f.gcTrack : f.track; }
+
+  lineOf(f, gc) { return gc ? f.gcLine : f.line; }
+
   visible(lon, lat) {
     return window.d3.geoDistance([lon, lat], this.center) < Math.PI / 2 - 0.01;
   }
@@ -70,7 +74,7 @@ export class GlobeRenderer {
       const age = frame.completed - 1 - i;
       const a = lerp(t.activeAlpha * 0.8, t.settledAlpha, Math.min(1, age / RECENT_FLIGHTS));
       ctx.beginPath();
-      this.path(flights[i].line);
+      this.path(this.lineOf(flights[i], frame.gc));
       ctx.strokeStyle = rgba(a);
       ctx.lineWidth = age < RECENT_FLIGHTS ? 1.3 : 1;
       ctx.stroke();
@@ -78,7 +82,7 @@ export class GlobeRenderer {
 
     if (frame.hover >= 0 && frame.hover < frame.completed) {
       ctx.beginPath();
-      this.path(flights[frame.hover].line);
+      this.path(this.lineOf(flights[frame.hover], frame.gc));
       ctx.strokeStyle = rgba(1);
       ctx.lineWidth = 2.4;
       ctx.stroke();
@@ -87,8 +91,9 @@ export class GlobeRenderer {
     if (frame.active) {
       const f = flights[frame.active.i];
       const fr = frame.active.f;
-      this.strokeLifted(trackSlice(f.track, 0, fr), rgba(t.activeAlpha * 0.7), 1.6);
-      const comet = trackSlice(f.track, Math.max(0, fr - 0.08), fr);
+      const track = this.trackOf(f, frame.gc);
+      this.strokeLifted(trackSlice(track, 0, fr), rgba(t.activeAlpha * 0.7), 1.6);
+      const comet = trackSlice(track, Math.max(0, fr - 0.08), fr);
       this.strokeLifted(comet, rgba(1), 2.6);
       const head = comet[comet.length - 1];
       const ground = this.liftScreen(head[0], head[1], 0);
@@ -130,11 +135,11 @@ export class GlobeRenderer {
     }
   }
 
-  hitTest(x, y, flights, completed, maxPx = 6) {
+  hitTest(x, y, flights, completed, gc, maxPx = 6) {
     let best = -1;
     let bestD = maxPx;
     for (let i = 0; i < completed; i++) {
-      const pts = flights[i].track;
+      const pts = this.trackOf(flights[i], gc);
       let prev = null;
       for (const p of pts) {
         const s = this.visible(p[0], p[1]) ? this.proj([p[0], p[1]]) : null;
