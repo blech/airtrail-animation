@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   haversineKm, lerpLon, pointAt, trackSlice, trackLengthKm, midpoint, distPointSegment,
+  altitudeProfile, cruiseForKm, greatCircleTrack,
 } from '../src/geo.js';
 
 const near = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} !~ ${b}`);
@@ -71,4 +72,46 @@ test('distPointSegment', () => {
   near(distPointSegment([5, 3], [0, 0], [10, 0]), 3);
   near(distPointSegment([-4, 3], [0, 0], [10, 0]), 5);
   near(distPointSegment([1, 1], [2, 2], [2, 2]), Math.SQRT2);
+});
+
+test('altitudeProfile is a climb / cruise / descent trapezoid in metres', () => {
+  assert.equal(altitudeProfile(0, 11000), 0);
+  assert.equal(altitudeProfile(1, 11000), 0);
+  assert.equal(altitudeProfile(0.5, 11000), 11000);
+  assert.equal(altitudeProfile(0.075, 11000), 5500);
+});
+
+test('cruiseForKm scales with distance then caps at 11 km', () => {
+  assert.ok(cruiseForKm(100) < 5000);
+  assert.equal(cruiseForKm(8000), 11000);
+});
+
+test('greatCircleTrack: endpoints, count, linear times, altitude profile', () => {
+  const t = greatCircleTrack([-122.375, 37.62], [-0.4543, 51.47], 1000, 41000, 64);
+  assert.equal(t.length, 64);
+  near(t[0][0], -122.375, 1e-6); near(t[0][1], 37.62, 1e-6);
+  near(t[63][0], -0.4543, 1e-6); near(t[63][1], 51.47, 1e-6);
+  assert.equal(t[0][3], 1000);
+  assert.equal(t[63][3], 41000);
+  for (let i = 1; i < t.length; i++) assert.ok(t[i][3] > t[i - 1][3]);
+  assert.ok(Math.max(...t.map((p) => p[1])) > 60, 'SFO-LHR bulges north');
+  assert.equal(t[0][2], 0);
+  assert.equal(t[63][2], 0);
+  assert.equal(Math.max(...t.map((p) => p[2])), 11000);
+  const mid = pointAt(t, 0.5);
+  const m = midpoint([-122.375, 37.62], [-0.4543, 51.47]);
+  near(mid[0], m[0], 0.1); near(mid[1], m[1], 0.1);
+});
+
+test('greatCircleTrack across the antimeridian stays near +/-180, never swings through 0', () => {
+  const t = greatCircleTrack([170, 40], [-170, 40], 0, 1000, 32);
+  assert.ok(t.every((p) => Math.abs(p[0]) >= 169.9), t.map((p) => p[0]).join(','));
+});
+
+test('greatCircleTrack is finite for identical and antipodal airports', () => {
+  for (const [a, b] of [[[5, 5], [5, 5]], [[0, 0], [180, 0]]]) {
+    const t = greatCircleTrack(a, b, 0, 100, 16);
+    assert.equal(t.length, 16);
+    assert.ok(t.every((p) => p.every(Number.isFinite)));
+  }
 });
