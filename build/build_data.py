@@ -161,6 +161,31 @@ def _round_point(lon, lat, alt, t):
     return [round(lon, 4), round(lat, 4), int(round(alt)), int(t)]
 
 
+def _fill_altitudes(alts, cum, total):
+    """Fill missing (None) altitudes. Gaps between real values are interpolated by distance, gaps at the
+    ends take the nearest real value; a track with no altitudes at all gets the trapezoid profile."""
+    known = [i for i, a in enumerate(alts) if a is not None]
+    if not known:
+        cruise = cruise_for_km(total)
+        return [altitude_profile(c / total, cruise) for c in cum]
+    out = list(alts)
+    for i, a in enumerate(alts):
+        if a is not None:
+            continue
+        before = [k for k in known if k < i]
+        after = [k for k in known if k > i]
+        if not before:
+            out[i] = alts[after[0]]
+        elif not after:
+            out[i] = alts[before[-1]]
+        else:
+            lo, hi = before[-1], after[0]
+            span = cum[hi] - cum[lo]
+            u = (cum[i] - cum[lo]) / span if span > 0 else 0.0
+            out[i] = alts[lo] + (alts[hi] - alts[lo]) * u
+    return out
+
+
 def _track_from_coordinates(f, dep, arr):
     t = f["track"]
     coords = t["coordinates"]
@@ -170,15 +195,15 @@ def _track_from_coordinates(f, dep, arr):
     cum = _cumulative_km(lonlat)
     total = cum[-1] or 1.0
     approx = False
+    # airports below sea level report < 0
+    raw_alts = [max(0.0, c[2]) if len(c) > 2 and c[2] is not None else None for c in coords]
+    alts = _fill_altitudes(raw_alts, cum, total)
+    if all(a is None for a in raw_alts):
+        approx = True
     pts = []
     for i, c in enumerate(coords):
-        frac = cum[i] / total
-        alt = max(0.0, c[2]) if len(c) > 2 and c[2] is not None else None  # airports below sea level report < 0
-        if alt is None:
-            alt = altitude_profile(frac, cruise_for_km(total))
-            approx = True
         tt = times[i] if has_times else None
-        pts.append((c[0], c[1], alt, tt, frac))
+        pts.append((c[0], c[1], alts[i], tt, cum[i] / total))
     if has_times:
         dep, arr = int(times[0]), int(times[-1])
         if arr <= dep:

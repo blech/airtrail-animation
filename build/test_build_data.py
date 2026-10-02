@@ -146,6 +146,25 @@ class BuildFlightTests(unittest.TestCase):
         self.assertEqual(alts[-1], 0)
         self.assertGreater(max(alts), 1000)
 
+    def test_isolated_missing_altitude_is_interpolated_from_real_neighbours(self):
+        f = make_flight()
+        c = f["track"]["coordinates"]
+        c[0][2], c[1][2], c[2][2], c[3][2] = 11000.0, 11000.0, 11000.0, 11000.0
+        c[1] = [c[1][0], c[1][1]]          # one 2-element point between two real cruise points
+        out = bd.build_flight(f)
+        alts = [p[2] for p in out["track"]]
+        self.assertEqual(alts, [11000, 11000, 11000, 11000])
+        self.assertFalse(out["approx"], "only a whole-track altitude fill makes a flight approximate")
+
+    def test_missing_altitude_at_the_ends_takes_nearest_real_value(self):
+        f = make_flight()
+        c = f["track"]["coordinates"]
+        c[0] = [c[0][0], c[0][1]]
+        c[3] = [c[3][0], c[3][1]]
+        c[1][2], c[2][2] = 7000.0, 9000.0
+        alts = [p[2] for p in bd.build_flight(f)["track"]]
+        self.assertEqual(alts, [7000, 7000, 9000, 9000])
+
     def test_negative_altitude_is_clamped_to_zero(self):
         f = make_flight()
         f["track"]["coordinates"][0][2] = -3.0
