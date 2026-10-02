@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Reduce an AirTrail export to the privacy-clean flights.json used by the web page."""
 import argparse
+import hashlib
 import json
 import math
 import sys
@@ -11,6 +12,11 @@ TOLERANCE_DEG = 0.03   # ~3 km; sub-pixel at default zoom (1 px ~ 16 km on a 400
 MAX_POINTS = 140
 SYNTH_POINTS = 64
 CRUISE_M = 11000.0
+LUMA_LIMIT = 200      # colours lighter than this (Rec.601, 0-255) are darkened, as Dopplr's city colours were
+DARKEN = 0.8
+
+# Airports whose own municipality is not the city we want to show/colour (metro areas, nicer names)
+CITY_OVERRIDES = json.loads((Path(__file__).resolve().parent / "city_names.json").read_text())
 
 
 def wrap_lon(lon):
@@ -130,9 +136,19 @@ def parse_ts(s):
     return int(dt.timestamp())
 
 
+def city_rgb(name):
+    """Dopplr-style city colour: first six hex digits of md5(UTF-8 name), channels x0.8 (truncated) if too light."""
+    h = hashlib.md5(name.encode("utf-8")).hexdigest()[:6]
+    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    if 0.299 * r + 0.587 * g + 0.114 * b > LUMA_LIMIT:
+        r, g, b = int(r * DARKEN), int(g * DARKEN), int(b * DARKEN)
+    return "%02x%02x%02x" % (r, g, b)
+
+
 def _airport(a):
+    city = CITY_OVERRIDES.get(a.get("icao")) or a.get("municipality")
     return {
-        "icao": a.get("icao"), "iata": a.get("iata"), "city": a.get("municipality"),
+        "icao": a.get("icao"), "iata": a.get("iata"), "city": city, "rgb": city_rgb(city) if city else None,
         "country": a.get("country"), "lat": a.get("lat"), "lon": a.get("lon"),
     }
 
