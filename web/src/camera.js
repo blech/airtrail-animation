@@ -19,7 +19,8 @@ export function rotationFor(lon, lat) {
 }
 
 export function zoomForKm(km) {
-  return clamp(2 - km / 6000, 1, 1.8);
+  // 1.4x on short hops easing to 1x on long hauls; capped so the globe stays clear of the controls
+  return clamp(1.4 - ((km - 500) * 0.4) / 7500, 1, 1.4);
 }
 
 export function followStep(view, target, dt) {
