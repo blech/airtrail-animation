@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MARKS, DEFAULT_MARKS, resolveMarks, ringAirports } from '../src/marks.js';
+import { MARKS, DEFAULT_MARKS, resolveMarks, ringAirports, marksFromToggle, coloursOn } from '../src/marks.js';
 import { airportStats } from '../src/stats.js';
 
 const ap = (icao) => ({ icao, iata: icao.slice(1), lon: 0, lat: 0, rgb: '112233' });
@@ -51,4 +51,12 @@ test('no duplicates when an airport is both reached and a current endpoint', () 
   const air = { completed: 1, active: { i: 1, f: 0.5 } }; // LHR -> SFO, both already visited
   const r = ringAirports('all', FLIGHTS, air, airportStats(FLIGHTS, 1, 1));
   assert.equal(r.length, new Set(r.map((a) => a.icao)).size);
+});
+
+test('the city-colours checkbox swaps between the default rings and coloured dots', () => {
+  assert.equal(marksFromToggle(true), 'dots');
+  assert.equal(marksFromToggle(false), 'current');
+  assert.equal(coloursOn('dots'), true);
+  assert.equal(coloursOn('current'), false);
+  assert.equal(coloursOn('all'), false); // ?marks=all is URL-only; the checkbox starts unchecked
 });
