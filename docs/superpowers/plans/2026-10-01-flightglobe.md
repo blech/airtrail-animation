@@ -14,7 +14,7 @@
 
 - Static page: opens via any static file server; **no network access at runtime** (all libraries and data vendored under `web/`).
 - Python: standard library only; tests with `unittest` (`python3 -m unittest discover -s build -v`).
-- JS: ES modules in `web/src/`; tests with `node --test web/test/` (no npm dependencies). `package.json` has `"type": "module"`.
+- JS: ES modules in `web/src/`; tests with `node --test web/test/*.test.js` (no npm dependencies). `package.json` has `"type": "module"`.
 - Pure modules (`geo.js`, `clock.js`, `stats.js`, `format.js`, `themes.js`, `camera.js`) must not touch `window`, `document` or `d3`.
 - Output `flights.json` must contain **no** passengers, user IDs, seat, seat number, seat class, flight reason, notes, gates, terminals or aircraft registration. Allowed per flight: `id, date, flightNumber, airline, aircraft{name,icao}, from, to, dep, arr, track, approx`.
 - Track points are `[lon, lat, altM, t]`: altitude in **metres**, `t` in **Unix seconds**.
@@ -75,7 +75,7 @@ web/
 - Create: `package.json`, `.gitignore`, `README.md`
 
 **Interfaces:**
-- Produces: `npm test`-style entry points used by every later task (`node --test web/test/`, `python3 -m unittest discover -s build -v`).
+- Produces: `npm test`-style entry points used by every later task (`node --test web/test/*.test.js`, `python3 -m unittest discover -s build -v`).
 
 - [ ] **Step 1: Create `package.json`**
 
@@ -85,7 +85,7 @@ web/
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test web/test/ && python3 -m unittest discover -s build -v",
+    "test": "node --test web/test/*.test.js && python3 -m unittest discover -s build -v",
     "build:data": "python3 build/build_data.py",
     "serve": "python3 -m http.server 8000 -d web"
   }
@@ -110,7 +110,7 @@ A spinnable, animated globe of a personal flight history. Static page; data is a
 
     python3 build/build_data.py     # ../airtrails/airtrail.json -> web/data/flights.json
     python3 -m http.server 8000 -d web   # then open http://localhost:8000
-    node --test web/test/ && python3 -m unittest discover -s build -v
+    node --test web/test/*.test.js && python3 -m unittest discover -s build -v
 
 Design: `docs/superpowers/specs/`. Plan: `docs/superpowers/plans/`.
 ```
@@ -1294,7 +1294,7 @@ export function formatFlight(f) {
 
 - [ ] **Step 4: Run to verify they pass**
 
-Run: `node --test web/test/`
+Run: `node --test web/test/*.test.js`
 Expected: geo, clock, stats and format tests all PASS.
 
 - [ ] **Step 5: Commit**
@@ -1500,7 +1500,7 @@ export function followStep(view, target, dt) {
 
 - [ ] **Step 4: Run to verify they pass**
 
-Run: `node --test web/test/`
+Run: `node --test web/test/*.test.js`
 Expected: all six test files PASS.
 
 - [ ] **Step 5: Commit**
@@ -1931,7 +1931,7 @@ Open `http://localhost:8000`. Expected:
 - The theme dropdown switches Paper / Night / Natural live; reload keeps the choice; `?theme=night` overrides it; `?theme=constructor` falls back to Paper.
 - The browser console shows no errors. The bottom bar is visible (controls are inert until Task 11).
 
-Also run: `node --test web/test/` — still PASS.
+Also run: `node --test web/test/*.test.js` — still PASS.
 
 - [ ] **Step 9: Commit**
 
@@ -2153,7 +2153,7 @@ Open `http://localhost:8000`. Expected:
 - Hovering a trail shows e.g. `VS20 · 27 Jun 2026 · SFO → LHR · Boeing 787-9`, highlights that trail and labels its two airports; tapping works the same on touch.
 - Check all three themes. Judge airport label and dot scaling by eye (spec open items) and note any tweak wanted.
 
-Run: `node --test web/test/` → still PASS.
+Run: `node --test web/test/*.test.js` → still PASS.
 
 - [ ] **Step 4: Commit**
 
@@ -2264,7 +2264,7 @@ Open `http://localhost:8000` (use a browser profile without reduced motion). Exp
 - At the end the playhead stops, the full picture remains and the globe idles in a slow spin.
 - With `prefers-reduced-motion: reduce` it opens straight at the full state.
 
-Run: `node --test web/test/` → PASS.
+Run: `node --test web/test/*.test.js` → PASS.
 
 - [ ] **Step 3: Commit**
 
@@ -2441,7 +2441,7 @@ Open `http://localhost:8000`. Expected:
 - Keyboard: Space, ←/→ step between flights, End, Home.
 - At 375 px width (browser responsive mode) the bar wraps without horizontal scroll and touch drag/pinch work.
 
-Run: `node --test web/test/` → PASS.
+Run: `node --test web/test/*.test.js` → PASS.
 
 - [ ] **Step 4: Commit**
 
@@ -2471,7 +2471,7 @@ git commit -m "feat(web): controls, calendar timeline, readout and keyboard shor
 
 - [ ] **Step 3: Run the full test suite**
 
-Run: `node --test web/test/ && python3 -m unittest discover -s build -v`
+Run: `node --test web/test/*.test.js && python3 -m unittest discover -s build -v`
 Expected: all JS and Python tests PASS (Python real-export test not skipped).
 
 - [ ] **Step 4: Confirm the data file is clean and current**

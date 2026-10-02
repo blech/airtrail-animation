@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test web/test/ && python3 -m unittest discover -s build -v",
+    "test": "node --test web/test/*.test.js && python3 -m unittest discover -s build -v",
     "build:data": "python3 build/build_data.py",
     "serve": "python3 -m http.server 8000 -d web"
   }
