@@ -112,35 +112,46 @@ export class GlobeRenderer {
     }
   }
 
-  drawAirports(airports, labels, ring) {
+  drawAirports(airports, labels, rings, marks) {
     const { ctx, theme: t } = this;
     ctx.font = '11px -apple-system, system-ui, sans-serif';
     ctx.textBaseline = 'alphabetic';
-    const label = (a, s) => {
-      ctx.fillStyle = t.ui.fg;
-      ctx.fillText(a.iata || a.icao, s[0] + 7, s[1] - 7);
+    const colourOf = (a) => (a.rgb ? `#${a.rgb}` : t.dot);
+    const disc = (s, r, fill) => {
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.arc(s[0], s[1], r, 0, Math.PI * 2);
+      ctx.fill();
     };
+    const shown = new Map(); // icao -> { airport, s } for anything drawn, so it can be labelled once
     if (airports) {
       for (const { airport, n } of airports.values()) {
         const s = this.liftScreen(airport.lon, airport.lat, 0);
         if (!s) continue;
-        ctx.fillStyle = t.dot;
-        ctx.beginPath();
-        ctx.arc(s[0], s[1], 1.8 + 0.9 * Math.sqrt(n), 0, Math.PI * 2);
-        ctx.fill();
-        if (labels.has(airport.icao)) label(airport, s);
+        const r = 1.8 + 0.9 * Math.sqrt(n);
+        if (marks === 'dots') { disc(s, r + 1.4, t.bg); disc(s, r, colourOf(airport)); } else disc(s, r, t.dot);
+        shown.set(airport.icao, { airport, s, r });
       }
     }
-    if (ring) {
-      const s = this.liftScreen(ring.lon, ring.lat, 0);
-      if (s) {
-        ctx.strokeStyle = t.dot;
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.arc(s[0], s[1], 4.5, 0, Math.PI * 2);
-        ctx.stroke();
-        if (labels.has(ring.icao)) label(ring, s);
-      }
+    for (const a of rings) {
+      const s = this.liftScreen(a.lon, a.lat, 0);
+      if (!s) continue;
+      const base = shown.get(a.icao);
+      const radius = base ? base.r + 3.5 : 4.5;
+      ctx.beginPath();
+      ctx.arc(s[0], s[1], radius, 0, Math.PI * 2);
+      ctx.lineWidth = 4.5;           // theme-coloured halo underneath so any city colour reads on any theme
+      ctx.strokeStyle = t.bg;
+      ctx.stroke();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = colourOf(a);
+      ctx.stroke();
+      if (!base) shown.set(a.icao, { airport: a, s, r: radius });
+    }
+    for (const { airport, s } of shown.values()) {
+      if (!labels.has(airport.icao)) continue;
+      ctx.fillStyle = t.ui.fg;
+      ctx.fillText(airport.iata || airport.icao, s[0] + 7, s[1] - 7);
     }
   }
 
@@ -209,7 +220,7 @@ export class GlobeRenderer {
 
     if (flights && flights.length) {
       this.drawFlights(flights, frame);
-      this.drawAirports(frame.airports, frame.labels || new Set(), frame.ring || null);
+      this.drawAirports(frame.airports, frame.labels || new Set(), frame.rings || [], frame.marks);
     }
   }
 }
