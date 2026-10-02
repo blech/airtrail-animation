@@ -85,3 +85,45 @@ export function distPointSegment(p, a, b) {
   const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2));
   return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
 }
+
+const CRUISE_M = 11000;
+
+// Climb over the first 15%, cruise, descend over the last 15%. Mirrors build/build_data.py.
+export function altitudeProfile(frac, cruiseM = CRUISE_M) {
+  return Math.round(Math.max(0, cruiseM * Math.min(1, frac / 0.15, (1 - frac) / 0.15)));
+}
+
+export function cruiseForKm(km) {
+  return Math.min(CRUISE_M, 2500 + 9 * km);
+}
+
+// Synthetic [lon, lat, altM, t] track along the great circle a -> b, timed linearly from dep to arr.
+export function greatCircleTrack(a, b, dep, arr, n = 64) {
+  const la1 = rad(a[1]);
+  const lo1 = rad(a[0]);
+  const la2 = rad(b[1]);
+  const lo2 = rad(b[0]);
+  const d = 2 * Math.asin(Math.min(1, Math.sqrt(
+    Math.sin((la2 - la1) / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin((lo2 - lo1) / 2) ** 2,
+  )));
+  const sinD = Math.sin(d);
+  const degenerate = Math.abs(sinD) < 1e-9; // identical or antipodal: no unique arc
+  const cruise = cruiseForKm(d * R_KM);
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const f = i / (n - 1);
+    let lon = a[0];
+    let lat = a[1];
+    if (!degenerate) {
+      const A = Math.sin((1 - f) * d) / sinD;
+      const B = Math.sin(f * d) / sinD;
+      const x = A * Math.cos(la1) * Math.cos(lo1) + B * Math.cos(la2) * Math.cos(lo2);
+      const y = A * Math.cos(la1) * Math.sin(lo1) + B * Math.cos(la2) * Math.sin(lo2);
+      const z = A * Math.sin(la1) + B * Math.sin(la2);
+      lon = deg(Math.atan2(y, x));
+      lat = deg(Math.atan2(z, Math.hypot(x, y)));
+    }
+    out.push([lon, lat, altitudeProfile(f, cruise), dep + f * (arr - dep)]);
+  }
+  return out;
+}

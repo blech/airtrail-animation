@@ -13,6 +13,10 @@
     <div id="date"></div>
     <div id="stats"></div>
   </div>
+  <div id="flightinfo" aria-live="off">
+    <div id="fnum"></div>
+    <div id="fsub"></div>
+  </div>
   <div id="tooltip" hidden></div>
 
   <div id="controls">
@@ -27,6 +31,7 @@
       <button id="end" type="button" title="Skip to end (End)" aria-label="Skip to end">⏭</button>
       <button id="speed" type="button" title="Playback speed">1×</button>
       <label class="check"><input id="follow" type="checkbox" checked> Follow</label>
+      <label class="check"><input id="gc" type="checkbox"> Great circle</label>
       <select id="theme" aria-label="Theme"></select>
     </div>
   </div>
