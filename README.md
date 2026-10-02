@@ -15,6 +15,8 @@ To publish, copy the `web/` folder to any static host. `web/data/flights.json` i
 
 The page opens as a time-lapse: flights play in date order, each for a few seconds (scaled gently by real duration), and the globe accumulates until it is "full". The date counter jumps between trips; the timeline at the bottom is on the true calendar axis.
 
+- The date line shows the current flight's own date; stopped at the very start or the full state it shows the whole span. Airport labels follow the current flight (the destination gets a ring until it lands); at the full state the busiest airports are labelled.
+- When playback finishes by itself the globe idles in a slow spin; any touch, key or scroll stops it for good (until the next run finishes). Skip-to-end and reduced-motion leave it static, and only a real flick carries momentum.
 - Drag to spin, scroll or pinch to zoom, double-click to reset.
 - Top right shows the flight in the air (airline · aircraft); on a phone it stacks under the date.
 - Hover (or tap) a trail for its flight number, date, route, aircraft, distance flown and great-circle distance.

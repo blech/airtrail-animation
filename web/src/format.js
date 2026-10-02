@@ -5,11 +5,6 @@ export function formatDate(ymd) {
   return `${d} ${MONTHS[m - 1]} ${y}`;
 }
 
-export function formatClock(unixSeconds) {
-  const d = new Date(unixSeconds * 1000);
-  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
-}
-
 export function formatKm(n) {
   return `${String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} km`;
 }
@@ -28,4 +23,11 @@ export function formatFlightLines(f) {
 export function flightBlurb(f) {
   const subtitle = [f.airline, f.aircraft && f.aircraft.name].filter(Boolean).join(' · ');
   return { title: f.flightNumber, subtitle };
+}
+
+// Date line: the flight's own (local departure) date, or the whole span when stopped at the very start/end.
+export function dateLabel(flights, cur, showRange) {
+  if (!flights.length) return '';
+  if (showRange) return `${formatDate(flights[0].date)} – ${formatDate(flights[flights.length - 1].date)}`;
+  return formatDate(flights[cur >= 0 ? cur : 0].date);
 }

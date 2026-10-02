@@ -1,15 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatDate, formatClock, formatKm, iataOf, formatFlightLines, flightBlurb } from '../src/format.js';
+import { formatDate, formatKm, iataOf, formatFlightLines, flightBlurb, dateLabel } from '../src/format.js';
 
 test('formatDate', () => {
   assert.equal(formatDate('2026-06-27'), '27 Jun 2026');
   assert.equal(formatDate('2010-01-05'), '5 Jan 2010');
-});
-
-test('formatClock is UTC', () => {
-  assert.equal(formatClock(Date.UTC(2019, 11, 26, 23, 59) / 1000), '26 Dec 2019');
-  assert.equal(formatClock(0), '1 Jan 1970');
 });
 
 test('formatKm groups thousands', () => {
@@ -44,4 +39,13 @@ test('flightBlurb: flight number title, airline · aircraft subtitle', () => {
   assert.deepEqual(flightBlurb(FLIGHT), { title: 'VS20', subtitle: 'Virgin Atlantic · Boeing 787-9' });
   assert.deepEqual(flightBlurb({ ...FLIGHT, airline: null }), { title: 'VS20', subtitle: 'Boeing 787-9' });
   assert.deepEqual(flightBlurb({ ...FLIGHT, airline: null, aircraft: null }), { title: 'VS20', subtitle: '' });
+});
+
+test('dateLabel: the flight date, or the first-last range at a stopped edge', () => {
+  const fs = [{ date: '2010-09-22' }, { date: '2014-05-01' }, { date: '2026-07-11' }];
+  assert.equal(dateLabel(fs, 1, false), '1 May 2014');
+  assert.equal(dateLabel(fs, -1, false), '22 Sep 2010'); // before anything has flown: first flight's date
+  assert.equal(dateLabel(fs, 2, true), '22 Sep 2010 – 11 Jul 2026');
+  assert.equal(dateLabel([], -1, true), '');
+  assert.equal(dateLabel([{ date: '2020-01-02' }], 0, true), '2 Jan 2020 – 2 Jan 2020');
 });
