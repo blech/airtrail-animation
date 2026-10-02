@@ -6,6 +6,7 @@ import { buildSchedule, locate } from './clock.js';
 import { formatFlight } from './format.js';
 import { GlobeRenderer } from './render.js';
 import { attachInteraction, applyInertia } from './interaction.js';
+import { bindUi } from './ui.js';
 
 const STORAGE_KEY = 'flightglobe.theme';
 
@@ -83,6 +84,12 @@ async function main() {
     onReset() { Object.assign(view, defaultView()); state.follow = true; },
   });
 
+  const ui = bindUi({
+    state, schedule, flights, cum,
+    getLoc: () => loc,
+    setFollow: (on) => { state.follow = on; },
+  });
+
   window.addEventListener('resize', () => renderer.resize());
   renderer.resize();
 
@@ -121,6 +128,7 @@ async function main() {
 
     const airports = airportStats(flights, loc.completed, loc.active ? loc.active.i : -1);
     renderer.draw(view, flights, { completed: loc.completed, active: loc.active, airports, hover });
+    ui.update();
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
