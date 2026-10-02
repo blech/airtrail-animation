@@ -16,9 +16,10 @@ To publish, copy the `web/` folder to any static host. `web/data/flights.json` i
 The page opens as a time-lapse: flights play in date order, each for a few seconds (scaled gently by real duration), and the globe accumulates until it is "full". The date counter jumps between trips; the timeline at the bottom is on the true calendar axis.
 
 - The date line shows the current flight's own date; stopped at the very start or the full state it shows the whole span. Airport labels follow the current flight (the destination gets a ring until it lands); at the full state the busiest airports are labelled.
+- Airports carry a city colour (Dopplr's scheme: `md5(city name)[:6]`, darkened x0.8 when light; `build/city_names.json` maps airports such as NRT to their metro city). By default the current flight's two airports are ringed in their city colours; the **Show city colours** checkbox (hidden on phones) colours every airport dot instead. `?marks=dots` starts with it on, and `?marks=all` (URL only) rings every airport reached so far.
 - When playback finishes by itself the globe idles in a slow spin; any touch, key or scroll stops it for good (until the next run finishes). Skip-to-end and reduced-motion leave it static, and only a real flick carries momentum.
 - Drag to spin, scroll or pinch to zoom, double-click to reset.
-- Top right shows the flight in the air (airline · aircraft); on a phone it stacks under the date.
+- Top right shows the flight in the air (callsign over airline · aircraft); on a phone the header reads `DATE · CALLSIGN`, then airline · aircraft, then the running stats.
 - Hover (or tap) a trail for its flight number, date, route, aircraft, distance flown and great-circle distance.
 - **Great circle** redraws every flight as the great-circle arc between its airports instead of the recorded track (constant speed, same timing). The readout distance is always the real distance flown.
 - **Follow** makes the camera track each flight; any manual drag or zoom switches it off.

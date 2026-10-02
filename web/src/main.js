@@ -3,6 +3,7 @@ import { defaultView, followStep, easeToward } from './camera.js';
 import { loadFlights, loadLand } from './data.js';
 import { airportStats, airportLabels, computeStats } from './stats.js';
 import { buildSchedule, locate } from './clock.js';
+import { resolveMarks, ringAirports } from './marks.js';
 import { formatFlightLines } from './format.js';
 import { GlobeRenderer } from './render.js';
 import { attachInteraction, applyInertia } from './interaction.js';
@@ -59,6 +60,7 @@ async function main() {
     playhead: reduced ? schedule.total : 0,
     follow: true,
     greatCircle: false,
+    marks: resolveMarks(window.location.search),
     idle: false,            // slow idle spin: only after playback finishes by itself, until the user touches anything
     ended: reduced,
   };
@@ -136,8 +138,9 @@ async function main() {
     }
 
     const airports = airportStats(flights, loc.completed, loc.active ? loc.active.i : -1);
-    const { labels, ring } = airportLabels(flights, loc, airports, hover);
-    renderer.draw(view, flights, { completed: loc.completed, active: loc.active, airports, labels, ring, hover, gc: state.greatCircle });
+    const { labels } = airportLabels(flights, loc, airports, hover);
+    const rings = ringAirports(state.marks, flights, loc, airports);
+    renderer.draw(view, flights, { completed: loc.completed, active: loc.active, airports, labels, rings, marks: state.marks, hover, gc: state.greatCircle });
     ui.update();
     requestAnimationFrame(frame);
   }

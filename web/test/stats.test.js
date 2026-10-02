@@ -48,14 +48,12 @@ test('currentIndex: the flight in the air, else the one that just landed, else -
   assert.equal(currentIndex({ completed: 0, active: null }, 0), -1);
 });
 
-test('airportLabels: current flight\'s airports, with a ring on a destination not yet reached', () => {
+test('airportLabels: the current flight\'s two airports, before it has reached its destination too', () => {
   const inAir = { completed: 2, active: { i: 2, f: 0.5 } };
   const l = airportLabels(FLIGHTS, inAir, airportStats(FLIGHTS, 2, 2), -1);
   assert.deepEqual([...l.labels].sort(), ['KBOS', 'KSFO']);
-  assert.equal(l.ring.icao, 'KBOS');
   const l2 = airportLabels(FLIGHTS, { completed: 2, active: null }, airportStats(FLIGHTS, 2, -1), -1);
   assert.deepEqual([...l2.labels].sort(), ['EGLL', 'KSFO']); // flight 1: LHR -> SFO, just landed
-  assert.equal(l2.ring, null);
 });
 
 test('airportLabels: full state falls back to the busiest airports, hover adds its two', () => {
@@ -63,7 +61,6 @@ test('airportLabels: full state falls back to the busiest airports, hover adds i
   const m = airportStats(FLIGHTS, 3, -1);
   const l = airportLabels(FLIGHTS, full, m, -1);
   assert.deepEqual([...l.labels].sort(), ['EGLL', 'KBOS', 'KSFO']);
-  assert.equal(l.ring, null);
   const hovered = airportLabels(FLIGHTS, { completed: 0, active: null }, airportStats(FLIGHTS, 0, -1), 2);
   assert.deepEqual([...hovered.labels].sort(), ['KBOS', 'KSFO']);
 });

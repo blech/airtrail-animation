@@ -68,6 +68,7 @@ class GeometryTests(unittest.TestCase):
 
 
 REAL_EXPORT = Path(__file__).resolve().parents[2] / "airtrails" / "airtrail.json"
+REAL_DOPPLR = Path(__file__).resolve().parents[2] / "airtrails" / "dopplr_full_data.json"
 ALLOWED_TOP = {"id", "date", "flightNumber", "airline", "aircraft", "from", "to", "dep", "arr", "track", "approx"}
 
 
@@ -117,7 +118,7 @@ class BuildFlightTests(unittest.TestCase):
         self.assertEqual(out["flightNumber"], "UA123")
         self.assertEqual(out["aircraft"], {"name": "Boeing 737-800", "icao": "B738"})
         self.assertEqual(out["airline"], "United")
-        self.assertEqual(set(out["from"]), {"icao", "iata", "city", "country", "lat", "lon"})
+        self.assertEqual(set(out["from"]), {"icao", "iata", "city", "country", "lat", "lon", "rgb"})
 
     def test_real_track_keeps_recorded_times_and_window(self):
         out = bd.build_flight(make_flight())
@@ -204,6 +205,49 @@ class BuildFlightTests(unittest.TestCase):
         self.assertTrue(all(-180 <= x < 180 for x in lons))
         self.assertAlmostEqual(lons[0], 170.0)
         self.assertAlmostEqual(lons[-1], -170.0)
+
+
+class CityColourTests(unittest.TestCase):
+    def test_colour_is_the_first_six_hex_digits_of_md5_of_the_utf8_name(self):
+        self.assertEqual(bd.city_rgb("Paris"), "e20d37")
+        self.assertEqual(bd.city_rgb("Bodø"), "caae12")      # non-ASCII: hashed as UTF-8
+        self.assertEqual(bd.city_rgb("Flåm"), "68f459")
+
+    def test_light_colours_are_darkened_by_truncating_a_0_8_multiply(self):
+        # values taken from the Dopplr export; San Diego distinguishes truncation from rounding (0x81 vs 0x80)
+        self.assertEqual(bd.city_rgb("Columbus"), "ba9f67")
+        self.assertEqual(bd.city_rgb("San Diego"), "80bdcc")
+        self.assertEqual(bd.city_rgb("York"), "abc039")
+        self.assertEqual(bd.city_rgb("Chicago"), "9cfa1e")   # light-ish but under the limit: untouched
+
+    def test_airport_city_comes_from_the_override_table(self):
+        f = make_flight(track=None)
+        f["from"] = make_airport("RJAA", 35.77, 140.39)
+        f["from"]["municipality"] = "Narita"
+        out = bd.build_flight(f)
+        self.assertEqual(out["from"]["city"], "Tokyo")
+        self.assertEqual(out["from"]["rgb"], bd.city_rgb("Tokyo"))
+        self.assertEqual(out["to"]["city"], "Town KBOS")     # no override: the airport data's name
+        self.assertEqual(out["to"]["rgb"], bd.city_rgb("Town KBOS"))
+
+    def test_override_table_is_well_formed(self):
+        for icao, name in bd.CITY_OVERRIDES.items():
+            self.assertRegex(icao, r"^[A-Z0-9]{4}$")
+            self.assertTrue(name.strip())
+
+    @unittest.skipUnless(REAL_DOPPLR.exists(), "Dopplr export not present")
+    def test_rule_reproduces_every_colour_in_the_dopplr_export(self):
+        data = json.loads(REAL_DOPPLR.read_text())
+        cities = {}
+        for t in data["trips"]:
+            cities[t["city"]["name"]] = t["city"]["rgb"]
+        for p in data["places"]:
+            c = p.get("city")
+            if isinstance(c, dict) and c.get("rgb"):
+                cities[c["name"]] = c["rgb"]
+        self.assertGreater(len(cities), 30)
+        wrong = {n: (r, bd.city_rgb(n)) for n, r in cities.items() if bd.city_rgb(n) != r}
+        self.assertEqual(wrong, {})
 
 
 class BuildAllTests(unittest.TestCase):
