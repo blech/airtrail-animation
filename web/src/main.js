@@ -1,7 +1,7 @@
 import { THEMES, THEME_ORDER, resolveTheme } from './themes.js';
-import { defaultView, followStep } from './camera.js';
+import { defaultView, followStep, easeToward } from './camera.js';
 import { loadFlights, loadLand } from './data.js';
-import { airportStats, computeStats } from './stats.js';
+import { airportStats, airportLabels, computeStats } from './stats.js';
 import { buildSchedule, locate } from './clock.js';
 import { formatFlightLines } from './format.js';
 import { GlobeRenderer } from './render.js';
@@ -59,6 +59,7 @@ async function main() {
     playhead: reduced ? schedule.total : 0,
     follow: true,
     greatCircle: false,
+    idle: false,            // slow idle spin: only after playback finishes by itself, until the user touches anything
     ended: reduced,
   };
   let loc = locate(schedule, state.playhead);
@@ -84,6 +85,12 @@ async function main() {
     onHover(x, y) { showTooltip(renderer.hitTest(x, y, flights, loc.completed, state.greatCircle), x, y); },
     onReset() { Object.assign(view, defaultView()); state.follow = true; },
   });
+
+  // any touch, key press or scroll ends the idle spin until playback next finishes by itself
+  const stopIdle = () => { state.idle = false; };
+  document.addEventListener('pointerdown', stopIdle, true);
+  document.addEventListener('keydown', stopIdle, true);
+  document.addEventListener('wheel', stopIdle, { capture: true, passive: true });
 
   const ui = bindUi({
     state, schedule, flights, cum,
@@ -111,6 +118,7 @@ async function main() {
       if (state.playhead >= schedule.total) {
         state.playhead = schedule.total;
         state.playing = false;
+        state.idle = true;
       }
     }
     state.ended = state.playhead >= schedule.total;
@@ -120,15 +128,16 @@ async function main() {
     if (state.follow && !view.dragging && !state.ended) {
       const target = followTarget(loc);
       if (target) followStep(view, target, dt);
-    } else if (state.ended && !view.dragging && Math.abs(view.vel[0]) < 0.05) {
-      view.rot[0] += IDLE_SPIN_DEG_PER_S * dt;
-      view.followZoom += (1 - view.followZoom) * (1 - Math.exp(-dt / 0.8));
+    } else if (state.ended && !view.dragging) {
+      if (state.idle && Math.abs(view.vel[0]) < 0.05) view.rot[0] += IDLE_SPIN_DEG_PER_S * dt;
+      view.followZoom = easeToward(view.followZoom, 1, dt, 0.8);
     } else if (!state.follow) {
-      view.followZoom += (1 - view.followZoom) * (1 - Math.exp(-dt / 0.3));
+      view.followZoom = easeToward(view.followZoom, 1, dt, 0.3);
     }
 
     const airports = airportStats(flights, loc.completed, loc.active ? loc.active.i : -1);
-    renderer.draw(view, flights, { completed: loc.completed, active: loc.active, airports, hover, gc: state.greatCircle });
+    const { labels, ring } = airportLabels(flights, loc, airports, hover);
+    renderer.draw(view, flights, { completed: loc.completed, active: loc.active, airports, labels, ring, hover, gc: state.greatCircle });
     ui.update();
     requestAnimationFrame(frame);
   }
