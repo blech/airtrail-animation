@@ -1,4 +1,4 @@
-import { clamp, ZMIN, ZMAX } from './camera.js';
+import { clamp, releaseVelocity, ZMIN, ZMAX } from './camera.js';
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const TAP_PX = 6;
@@ -65,6 +65,7 @@ export function attachInteraction(canvas, view, hooks) {
       view.dragging = false;
       if (moved < TAP_PX) { view.vel = [0, 0]; hooks.onTap(p[0], p[1]); }
       else if (performance.now() - lastMoveAt > 80) view.vel = [0, 0];
+      else view.vel = releaseVelocity(view.vel);
     }
   };
   canvas.addEventListener('pointerup', end);
