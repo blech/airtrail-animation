@@ -16,7 +16,9 @@ To publish, copy the `web/` folder to any static host. `web/data/flights.json` i
 The page opens as a time-lapse: flights play in date order, each for a few seconds (scaled gently by real duration), and the globe accumulates until it is "full". The date counter jumps between trips; the timeline at the bottom is on the true calendar axis.
 
 - Drag to spin, scroll or pinch to zoom, double-click to reset.
-- Hover (or tap) a trail for its flight number, date, route and aircraft.
+- Top right shows the flight in the air (airline · aircraft); on a phone it stacks under the date.
+- Hover (or tap) a trail for its flight number, date, route, aircraft, distance flown and great-circle distance.
+- **Great circle** redraws every flight as the great-circle arc between its airports instead of the recorded track (constant speed, same timing). The readout distance is always the real distance flown.
 - **Follow** makes the camera track each flight; any manual drag or zoom switches it off.
 - Keys: `Space` play/pause, `←` `→` step between flights, `End` skip to the full state, `Home` restart.
 - Themes: Paper (default), Night, Natural. Choose in the corner, or open with `?theme=night`. The choice is remembered when storage is available.

@@ -1,7 +1,7 @@
 import {
   calendarForPlayhead, playheadForCalendar, calendarRange, stepTarget, yearTicks,
 } from './clock.js';
-import { formatClock, formatKm } from './format.js';
+import { formatClock, formatKm, flightBlurb } from './format.js';
 import { trackSlice, trackLengthKm } from './geo.js';
 import { airportStats } from './stats.js';
 
@@ -14,6 +14,9 @@ export function bindUi({ state, schedule, flights, cum, getLoc, setFollow }) {
   const speedBtn = $('speed');
   const scrub = $('scrub');
   const followBox = $('follow');
+  const gcBox = $('gc');
+  const fnumEl = $('fnum');
+  const fsubEl = $('fsub');
   const dateEl = $('date');
   const statsEl = $('stats');
   const ticksEl = $('ticks');
@@ -61,6 +64,7 @@ export function bindUi({ state, schedule, flights, cum, getLoc, setFollow }) {
     e.currentTarget.blur();
   });
   followBox.addEventListener('change', () => setFollow(followBox.checked));
+  gcBox.addEventListener('change', () => { state.greatCircle = gcBox.checked; });
 
   let wasPlaying = false;
   scrub.addEventListener('pointerdown', () => { wasPlaying = state.playing; state.playing = false; });
@@ -94,6 +98,12 @@ export function bindUi({ state, schedule, flights, cum, getLoc, setFollow }) {
   let lastCompleted = -1;
   function update() {
     const loc = getLoc();
+    // top right: the flight in the air, or the one that just landed; blank before the first and at the end
+    const shown = loc.active ? loc.active.i : (loc.completed > 0 && loc.completed < flights.length ? loc.completed - 1 : -1);
+    const blurb = shown >= 0 ? flightBlurb(flights[shown]) : { title: '', subtitle: '' };
+    fnumEl.textContent = blurb.title;
+    fsubEl.textContent = blurb.subtitle;
+
     const T = calendarForPlayhead(schedule, state.playhead);
     dateEl.textContent = flights.length ? formatClock(T) : '';
 
