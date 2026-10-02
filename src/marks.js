@@ -25,3 +25,7 @@ export function ringAirports(mode, flights, loc, airports) {
   }
   return [...out.values()];
 }
+
+// The "Show city colours" checkbox: checked = coloured dots, unchecked = the default rings.
+export const marksFromToggle = (checked) => (checked ? 'dots' : DEFAULT_MARKS);
+export const coloursOn = (mode) => mode === 'dots';

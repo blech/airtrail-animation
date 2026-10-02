@@ -60,10 +60,10 @@ async function main() {
     playhead: reduced ? schedule.total : 0,
     follow: true,
     greatCircle: false,
+    marks: resolveMarks(window.location.search),
     idle: false,            // slow idle spin: only after playback finishes by itself, until the user touches anything
     ended: reduced,
   };
-  const marks = resolveMarks(window.location.search);
   let loc = locate(schedule, state.playhead);
   const IDLE_SPIN_DEG_PER_S = 4;
 
@@ -139,8 +139,8 @@ async function main() {
 
     const airports = airportStats(flights, loc.completed, loc.active ? loc.active.i : -1);
     const { labels } = airportLabels(flights, loc, airports, hover);
-    const rings = ringAirports(marks, flights, loc, airports);
-    renderer.draw(view, flights, { completed: loc.completed, active: loc.active, airports, labels, rings, marks, hover, gc: state.greatCircle });
+    const rings = ringAirports(state.marks, flights, loc, airports);
+    renderer.draw(view, flights, { completed: loc.completed, active: loc.active, airports, labels, rings, marks: state.marks, hover, gc: state.greatCircle });
     ui.update();
     requestAnimationFrame(frame);
   }

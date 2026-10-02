@@ -9,14 +9,12 @@
 <body>
   <canvas id="globe" aria-label="Globe showing flight history"></canvas>
 
-  <div id="readout" aria-live="off">
+  <header id="header">
     <div id="date"></div>
     <div id="stats"></div>
-  </div>
-  <div id="flightinfo" aria-live="off">
     <div id="fnum"></div>
     <div id="fsub"></div>
-  </div>
+  </header>
   <div id="tooltip" hidden></div>
 
   <div id="controls">
@@ -33,6 +31,7 @@
       <button id="speed" type="button" title="Playback speed">1×</button>
       <label class="check"><input id="follow" type="checkbox" checked> Follow</label>
       <label class="check"><input id="gc" type="checkbox"> Great circle</label>
+      <label class="check" id="colours-label"><input id="colours" type="checkbox"> Show city colours</label>
       <select id="theme" aria-label="Theme"></select>
     </div>
   </div>
