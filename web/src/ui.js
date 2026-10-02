@@ -1,5 +1,5 @@
 import {
-  calendarForPlayhead, playheadForCalendar, calendarRange, stepTarget,
+  calendarForPlayhead, playheadForCalendar, calendarRange, stepTarget, yearTicks,
 } from './clock.js';
 import { formatClock, formatKm } from './format.js';
 import { trackSlice, trackLengthKm } from './geo.js';
@@ -30,17 +30,18 @@ export function bindUi({ state, schedule, flights, cum, getLoc, setFollow }) {
     ticksEl.appendChild(el);
     return el;
   });
-  if (flights.length) {
-    const y0 = new Date(T0 * 1000).getUTCFullYear();
-    const y1 = new Date(T1 * 1000).getUTCFullYear();
-    for (let y = y0; y <= y1; y++) {
-      const at = y === y0 ? T0 : Date.UTC(y, 0, 1) / 1000;
+  function drawYears() {
+    yearsEl.textContent = '';
+    const width = Math.max(1, ticksEl.getBoundingClientRect().width);
+    for (const { year, f } of yearTicks(T0, T1, 34 / width)) {
       const el = document.createElement('span');
-      el.textContent = String(y);
-      el.style.left = `${Math.min(97, Math.max(2, frac(at) * 100))}%`;
+      el.textContent = String(year);
+      el.style.left = `${Math.min(97, Math.max(2, f * 100))}%`;
       yearsEl.appendChild(el);
     }
   }
+  drawYears();
+  window.addEventListener('resize', drawYears);
 
   const syncPlay = () => { playBtn.textContent = state.playing ? '⏸' : '▶'; };
   const jump = (p) => { state.playhead = Math.min(schedule.total, Math.max(0, p)); };

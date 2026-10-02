@@ -68,3 +68,18 @@ export function stepTarget(schedule, p, dir) {
   }
   return 0;
 }
+
+// Jan 1 year labels on the calendar axis as fractions [0,1], thinned so neighbours are >= minGapFrac apart.
+export function yearTicks(T0, T1, minGapFrac) {
+  const span = T1 - T0;
+  if (!(span > 0)) return [];
+  const out = [];
+  const y1 = new Date(T1 * 1000).getUTCFullYear();
+  for (let y = new Date(T0 * 1000).getUTCFullYear(); y <= y1; y++) {
+    const at = Date.UTC(y, 0, 1) / 1000;
+    if (at < T0 || at > T1) continue;
+    const f = (at - T0) / span;
+    if (!out.length || f - out[out.length - 1].f >= minGapFrac - 1e-9) out.push({ year: y, f });
+  }
+  return out;
+}

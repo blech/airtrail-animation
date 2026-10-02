@@ -33,10 +33,11 @@ test('rotationFor centres a point and limits tilt', () => {
   assert.equal(rotationFor(0, -89)[1], 70);
 });
 
-test('zoomForKm zooms in on short hops and out on long ones', () => {
-  assert.equal(zoomForKm(300), 1.8);
+test('zoomForKm zooms in on short hops and out on long ones, never past 1.4x', () => {
+  assert.equal(zoomForKm(300), 1.4);
   assert.equal(zoomForKm(9000), 1);
-  near(zoomForKm(3000), 1.5);
+  near(zoomForKm(4250), 1.2);
+  for (let km = 0; km < 20000; km += 250) assert.ok(zoomForKm(km) >= 1 && zoomForKm(km) <= 1.4);
 });
 
 test('followStep converges on the target', () => {
@@ -44,5 +45,5 @@ test('followStep converges on the target', () => {
   for (let i = 0; i < 600; i++) followStep(v, { lon: -122, lat: 37, km: 3000 }, 1 / 60);
   near(v.rot[0], 122, 0.01);
   near(v.rot[1], -37, 0.01);
-  near(v.followZoom, 1.5, 0.01);
+  near(v.followZoom, zoomForKm(3000), 0.01);
 });
