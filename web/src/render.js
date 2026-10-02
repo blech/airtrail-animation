@@ -1,3 +1,11 @@
+import { trackSlice, distPointSegment } from './geo.js';
+
+const CRUISE_M = 11000;
+const LIFT = 0.025;          // fraction of radius at cruise altitude
+const LABEL_TOP_N = 3;
+const RECENT_FLIGHTS = 4;    // how many recently completed flights fade from strong to settled
+const lerp = (a, b, f) => a + (b - a) * f;
+
 export class GlobeRenderer {
   constructor(canvas, land) {
     this.canvas = canvas;
@@ -25,6 +33,119 @@ export class GlobeRenderer {
   baseRadius() {
     // leave room at the bottom for the control bar on short screens
     return Math.min(this.w, this.h * 0.86) * 0.42;
+  }
+
+  visible(lon, lat) {
+    return window.d3.geoDistance([lon, lat], this.center) < Math.PI / 2 - 0.01;
+  }
+
+  liftScreen(lon, lat, altM) {
+    if (!this.visible(lon, lat)) return null;
+    const p = this.proj([lon, lat]);
+    const lift = 1 + LIFT * Math.min(1, Math.max(0, (altM || 0) / CRUISE_M));
+    return [this.cx + (p[0] - this.cx) * lift, this.cy + (p[1] - this.cy) * lift];
+  }
+
+  strokeLifted(points, rgba, width) {
+    const { ctx } = this;
+    ctx.strokeStyle = rgba;
+    ctx.lineWidth = width;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    let open = false;
+    ctx.beginPath();
+    for (const p of points) {
+      const s = this.liftScreen(p[0], p[1], p[2]);
+      if (!s) { open = false; continue; }
+      if (open) ctx.lineTo(s[0], s[1]); else { ctx.moveTo(s[0], s[1]); open = true; }
+    }
+    ctx.stroke();
+  }
+
+  drawFlights(flights, frame) {
+    const { ctx, theme: t } = this;
+    const rgba = (a) => `rgba(${t.trail},${a})`;
+
+    for (let i = 0; i < frame.completed; i++) {
+      const age = frame.completed - 1 - i;
+      const a = lerp(t.activeAlpha * 0.8, t.settledAlpha, Math.min(1, age / RECENT_FLIGHTS));
+      ctx.beginPath();
+      this.path(flights[i].line);
+      ctx.strokeStyle = rgba(a);
+      ctx.lineWidth = age < RECENT_FLIGHTS ? 1.3 : 1;
+      ctx.stroke();
+    }
+
+    if (frame.hover >= 0 && frame.hover < frame.completed) {
+      ctx.beginPath();
+      this.path(flights[frame.hover].line);
+      ctx.strokeStyle = rgba(1);
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+    }
+
+    if (frame.active) {
+      const f = flights[frame.active.i];
+      const fr = frame.active.f;
+      this.strokeLifted(trackSlice(f.track, 0, fr), rgba(t.activeAlpha * 0.7), 1.6);
+      const comet = trackSlice(f.track, Math.max(0, fr - 0.08), fr);
+      this.strokeLifted(comet, rgba(1), 2.6);
+      const head = comet[comet.length - 1];
+      const ground = this.liftScreen(head[0], head[1], 0);
+      const air = this.liftScreen(head[0], head[1], head[2]);
+      if (ground) {
+        ctx.fillStyle = rgba(0.15);
+        ctx.beginPath();
+        ctx.arc(ground[0], ground[1], 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (air) {
+        ctx.fillStyle = t.dot;
+        ctx.beginPath();
+        ctx.arc(air[0], air[1], 3.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  drawAirports(airports, hoverFlight) {
+    if (!airports || !airports.size) return;
+    const { ctx, theme: t } = this;
+    const ranked = [...airports.values()].sort((a, b) => b.n - a.n);
+    const labelled = new Set(ranked.slice(0, LABEL_TOP_N).map((e) => e.airport.icao));
+    if (hoverFlight) { labelled.add(hoverFlight.from.icao); labelled.add(hoverFlight.to.icao); }
+    ctx.font = '11px -apple-system, system-ui, sans-serif';
+    ctx.textBaseline = 'alphabetic';
+    for (const { airport, n } of airports.values()) {
+      const s = this.liftScreen(airport.lon, airport.lat, 0);
+      if (!s) continue;
+      ctx.fillStyle = t.dot;
+      ctx.beginPath();
+      ctx.arc(s[0], s[1], 1.8 + 0.9 * Math.sqrt(n), 0, Math.PI * 2);
+      ctx.fill();
+      if (labelled.has(airport.icao)) {
+        ctx.fillStyle = t.ui.fg;
+        ctx.fillText(airport.iata || airport.icao, s[0] + 7, s[1] - 7);
+      }
+    }
+  }
+
+  hitTest(x, y, flights, completed, maxPx = 6) {
+    let best = -1;
+    let bestD = maxPx;
+    for (let i = 0; i < completed; i++) {
+      const pts = flights[i].track;
+      let prev = null;
+      for (const p of pts) {
+        const s = this.visible(p[0], p[1]) ? this.proj([p[0], p[1]]) : null;
+        if (s && prev) {
+          const d = distPointSegment([x, y], prev, s);
+          if (d < bestD) { bestD = d; best = i; }
+        }
+        prev = s;
+      }
+    }
+    return best;
   }
 
   draw(view, flights, frame) {
@@ -70,6 +191,12 @@ export class GlobeRenderer {
       ctx.lineWidth = 1;
       ctx.strokeStyle = t.outline;
       ctx.stroke();
+    }
+
+    if (flights && flights.length) {
+      this.drawFlights(flights, frame);
+      const hoverFlight = frame.hover >= 0 ? flights[frame.hover] : null;
+      this.drawAirports(frame.airports, hoverFlight);
     }
   }
 }
