@@ -119,3 +119,143 @@ def cruise_for_km(km):
 def altitude_profile(frac, cruise=CRUISE_M):
     """Trapezoid: climb over the first 15%, cruise, descend over the last 15%. Metres."""
     return round(max(0.0, cruise * min(1.0, frac / 0.15, (1.0 - frac) / 0.15)))
+
+
+def parse_ts(s):
+    if not s:
+        return None
+    dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return int(dt.timestamp())
+
+
+def _airport(a):
+    return {
+        "icao": a.get("icao"), "iata": a.get("iata"), "city": a.get("municipality"),
+        "country": a.get("country"), "lat": a.get("lat"), "lon": a.get("lon"),
+    }
+
+
+def _window(f):
+    """(dep, arr) Unix seconds: actual takeoff/landing if known, else scheduled departure/arrival."""
+    dep = parse_ts(f.get("takeoffActual")) or parse_ts(f.get("departure"))
+    arr = parse_ts(f.get("landingActual")) or parse_ts(f.get("arrival"))
+    return dep, arr
+
+
+def _repair_window(dep, arr, km):
+    if arr is None or arr <= dep:
+        arr = dep + max(1800, int(km / 800.0 * 3600))
+    return dep, arr
+
+
+def _cumulative_km(points):
+    out = [0.0]
+    for a, b in zip(points, points[1:]):
+        out.append(out[-1] + haversine_km(a, b))
+    return out
+
+
+def _round_point(lon, lat, alt, t):
+    return [round(lon, 4), round(lat, 4), int(round(alt)), int(t)]
+
+
+def _track_from_coordinates(f, dep, arr):
+    t = f["track"]
+    coords = t["coordinates"]
+    times = t.get("times") or []
+    has_times = len(times) == len(coords)
+    lonlat = [(c[0], c[1]) for c in coords]
+    cum = _cumulative_km(lonlat)
+    total = cum[-1] or 1.0
+    approx = False
+    pts = []
+    for i, c in enumerate(coords):
+        frac = cum[i] / total
+        alt = max(0.0, c[2]) if len(c) > 2 and c[2] is not None else None  # airports below sea level report < 0
+        if alt is None:
+            alt = altitude_profile(frac, cruise_for_km(total))
+            approx = True
+        tt = times[i] if has_times else None
+        pts.append((c[0], c[1], alt, tt, frac))
+    if has_times:
+        dep, arr = int(times[0]), int(times[-1])
+        if arr <= dep:
+            dep, arr = _repair_window(dep, None, total)
+            approx = True
+    else:
+        dep, arr = _repair_window(dep, arr, total)
+        pts = [(p[0], p[1], p[2], dep + p[4] * (arr - dep), p[4]) for p in pts]
+        approx = True
+    pts = [(p[0], p[1], p[2], p[3]) for p in pts]
+    pts = simplify_track(pts, TOLERANCE_DEG, MAX_POINTS)
+    return [_round_point(*p) for p in pts], dep, arr, approx
+
+
+def _track_from_great_circle(f, dep, arr):
+    a, b = (f["from"]["lon"], f["from"]["lat"]), (f["to"]["lon"], f["to"]["lat"])
+    km = haversine_km(a, b)
+    dep, arr = _repair_window(dep, arr, km)
+    pts = great_circle(a, b, SYNTH_POINTS)
+    cruise = cruise_for_km(km)
+    out = []
+    for i, (lon, lat) in enumerate(pts):
+        frac = i / (len(pts) - 1)
+        out.append(_round_point(wrap_lon(lon), lat, altitude_profile(frac, cruise), dep + frac * (arr - dep)))
+    return out, dep, arr, True
+
+
+def build_flight(f):
+    dep, arr = _window(f)
+    if dep is None:
+        raise ValueError("flight %s on %s has no departure time" % (f.get("flightNumber"), f.get("date")))
+    track = f.get("track")
+    if track and len(track.get("coordinates") or []) >= 2:
+        pts, dep, arr, approx = _track_from_coordinates(f, dep, arr)
+    else:
+        pts, dep, arr, approx = _track_from_great_circle(f, dep, arr)
+    ac = f.get("aircraft")
+    airline = f.get("airline")
+    return {
+        "date": f.get("date"),
+        "flightNumber": f.get("flightNumber"),
+        "airline": airline.get("name") if airline else None,
+        "aircraft": {"name": ac.get("name"), "icao": ac.get("icao")} if ac else None,
+        "from": _airport(f["from"]),
+        "to": _airport(f["to"]),
+        "dep": dep,
+        "arr": arr,
+        "track": pts,
+        "approx": approx,
+    }
+
+
+def build_all(export):
+    flights = [build_flight(f) for f in export["flights"]]
+    flights.sort(key=lambda x: (x["dep"], x["arr"]))
+    for i, f in enumerate(flights):
+        f["id"] = i
+    return {"flights": flights}
+
+
+def main(argv=None):
+    root = Path(__file__).resolve().parents[1]
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--input", default=str(root.parent / "airtrails" / "airtrail.json"))
+    ap.add_argument("--output", default=str(root / "web" / "data" / "flights.json"))
+    args = ap.parse_args(argv)
+    export = json.loads(Path(args.input).read_text())
+    out = build_all(export)
+    text = json.dumps(out, separators=(",", ":"))
+    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+    Path(args.output).write_text(text)
+    pts = sum(len(f["track"]) for f in out["flights"])
+    approx = sum(1 for f in out["flights"] if f["approx"])
+    print("%d flights, %d track points, %d approximate, %.0f kB -> %s"
+          % (len(out["flights"]), pts, approx, len(text) / 1000, args.output))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
