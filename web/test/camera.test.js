@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ZMIN, ZMAX, clamp, defaultView, easeAngle, rotationFor, zoomForKm, followStep,
+  ZMIN, ZMAX, clamp, defaultView, easeAngle, rotationFor, zoomForKm, followStep, releaseVelocity, easeToward,
 } from '../src/camera.js';
 
 const near = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} !~ ${b}`);
@@ -46,4 +46,29 @@ test('followStep converges on the target', () => {
   near(v.rot[0], 122, 0.01);
   near(v.rot[1], -37, 0.01);
   near(v.followZoom, zoomForKm(3000), 0.01);
+});
+
+test('releaseVelocity: a slow release stops dead, a real flick keeps its momentum', () => {
+  assert.deepEqual(releaseVelocity([5, -3]), [0, 0]);
+  assert.deepEqual(releaseVelocity([0, 0]), [0, 0]);
+  assert.deepEqual(releaseVelocity([60, 10]), [60, 10]);
+  assert.deepEqual(releaseVelocity([-40, 0]), [-40, 0]);
+  assert.deepEqual(releaseVelocity([10, 10], 5), [10, 10]);
+});
+
+test('easeToward snaps onto the target once close, so motion actually stops', () => {
+  assert.equal(easeToward(1.4, 1, 0, 0.8), 1.4);
+  const mid = easeToward(1.4, 1, 0.016, 0.8);
+  assert.ok(mid < 1.4 && mid > 1);
+  assert.equal(easeToward(1.0004, 1, 0.016, 0.8), 1);
+  assert.equal(easeToward(1, 1, 0.016, 0.8), 1);
+});
+
+test('easeAngle and followStep reach rest exactly', () => {
+  assert.equal(easeAngle(19.998, 20, 0.016, 0.5), 20);
+  const v = defaultView();
+  for (let i = 0; i < 2000; i++) followStep(v, { lon: -122, lat: 37, km: 3000 }, 1 / 60);
+  const settled = [v.rot[0], v.rot[1], v.followZoom];
+  followStep(v, { lon: -122, lat: 37, km: 3000 }, 1 / 60);
+  assert.deepEqual([v.rot[0], v.rot[1], v.followZoom], settled);
 });

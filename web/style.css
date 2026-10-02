@@ -25,6 +25,11 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); o
 #years { position: absolute; left: 0; right: 0; top: 22px; height: 14px; color: var(--muted); font-size: 11px; }
 #years span { position: absolute; transform: translateX(-50%); }
 #scrub { position: absolute; left: 0; right: 0; top: 0; width: 100%; margin: 0; height: 20px; opacity: .0001; cursor: pointer; }
+#playhead { position: absolute; top: 3px; height: 19px; width: 2px; margin-left: -1px; background: var(--fg); pointer-events: none; }
+#playhead::before, #playhead::after { content: ''; position: absolute; left: -3px; width: 8px; height: 2px; background: var(--fg); }
+#playhead::before { top: 0; }
+#playhead::after { bottom: 0; }
+#scrub:focus-visible ~ #playhead { outline: 2px solid var(--muted); outline-offset: 3px; }
 #buttons { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 button, select { font: inherit; color: var(--fg); background: transparent; border: 1px solid var(--muted);
   border-radius: 8px; padding: 4px 10px; cursor: pointer; }

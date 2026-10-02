@@ -1,9 +1,9 @@
 import {
   calendarForPlayhead, playheadForCalendar, calendarRange, stepTarget, yearTicks,
 } from './clock.js';
-import { formatClock, formatKm, flightBlurb } from './format.js';
+import { formatKm, flightBlurb, dateLabel } from './format.js';
 import { trackSlice, trackLengthKm } from './geo.js';
-import { airportStats } from './stats.js';
+import { airportStats, currentIndex } from './stats.js';
 
 const SPEEDS = [0.5, 1, 2, 4];
 const SCRUB_MAX = 1000;
@@ -17,6 +17,7 @@ export function bindUi({ state, schedule, flights, cum, getLoc, setFollow }) {
   const gcBox = $('gc');
   const fnumEl = $('fnum');
   const fsubEl = $('fsub');
+  const playheadEl = $('playhead');
   const dateEl = $('date');
   const statsEl = $('stats');
   const ticksEl = $('ticks');
@@ -99,13 +100,16 @@ export function bindUi({ state, schedule, flights, cum, getLoc, setFollow }) {
   function update() {
     const loc = getLoc();
     // top right: the flight in the air, or the one that just landed; blank before the first and at the end
-    const shown = loc.active ? loc.active.i : (loc.completed > 0 && loc.completed < flights.length ? loc.completed - 1 : -1);
+    const shown = currentIndex(loc, flights.length);
     const blurb = shown >= 0 ? flightBlurb(flights[shown]) : { title: '', subtitle: '' };
     fnumEl.textContent = blurb.title;
     fsubEl.textContent = blurb.subtitle;
 
     const T = calendarForPlayhead(schedule, state.playhead);
-    dateEl.textContent = flights.length ? formatClock(T) : '';
+    // the whole span only when stopped at the very start or end; otherwise the flight's own date
+    const showRange = !state.playing && (state.playhead <= 0 || state.playhead >= schedule.total);
+    dateEl.textContent = dateLabel(flights, shown, showRange);
+    playheadEl.style.left = `${frac(T) * 100}%`;
 
     let km = cum[loc.completed].km;
     const airports = airportStats(flights, loc.completed, loc.active ? loc.active.i : -1).size;

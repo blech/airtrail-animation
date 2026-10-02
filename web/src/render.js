@@ -2,7 +2,6 @@ import { trackSlice, distPointSegment } from './geo.js';
 
 const CRUISE_M = 11000;
 const LIFT = 0.025;          // fraction of radius at cruise altitude
-const LABEL_TOP_N = 3;
 const RECENT_FLIGHTS = 4;    // how many recently completed flights fade from strong to settled
 const lerp = (a, b, f) => a + (b - a) * f;
 
@@ -113,24 +112,34 @@ export class GlobeRenderer {
     }
   }
 
-  drawAirports(airports, hoverFlight) {
-    if (!airports || !airports.size) return;
+  drawAirports(airports, labels, ring) {
     const { ctx, theme: t } = this;
-    const ranked = [...airports.values()].sort((a, b) => b.n - a.n);
-    const labelled = new Set(ranked.slice(0, LABEL_TOP_N).map((e) => e.airport.icao));
-    if (hoverFlight) { labelled.add(hoverFlight.from.icao); labelled.add(hoverFlight.to.icao); }
     ctx.font = '11px -apple-system, system-ui, sans-serif';
     ctx.textBaseline = 'alphabetic';
-    for (const { airport, n } of airports.values()) {
-      const s = this.liftScreen(airport.lon, airport.lat, 0);
-      if (!s) continue;
-      ctx.fillStyle = t.dot;
-      ctx.beginPath();
-      ctx.arc(s[0], s[1], 1.8 + 0.9 * Math.sqrt(n), 0, Math.PI * 2);
-      ctx.fill();
-      if (labelled.has(airport.icao)) {
-        ctx.fillStyle = t.ui.fg;
-        ctx.fillText(airport.iata || airport.icao, s[0] + 7, s[1] - 7);
+    const label = (a, s) => {
+      ctx.fillStyle = t.ui.fg;
+      ctx.fillText(a.iata || a.icao, s[0] + 7, s[1] - 7);
+    };
+    if (airports) {
+      for (const { airport, n } of airports.values()) {
+        const s = this.liftScreen(airport.lon, airport.lat, 0);
+        if (!s) continue;
+        ctx.fillStyle = t.dot;
+        ctx.beginPath();
+        ctx.arc(s[0], s[1], 1.8 + 0.9 * Math.sqrt(n), 0, Math.PI * 2);
+        ctx.fill();
+        if (labels.has(airport.icao)) label(airport, s);
+      }
+    }
+    if (ring) {
+      const s = this.liftScreen(ring.lon, ring.lat, 0);
+      if (s) {
+        ctx.strokeStyle = t.dot;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(s[0], s[1], 4.5, 0, Math.PI * 2);
+        ctx.stroke();
+        if (labels.has(ring.icao)) label(ring, s);
       }
     }
   }
@@ -200,8 +209,7 @@ export class GlobeRenderer {
 
     if (flights && flights.length) {
       this.drawFlights(flights, frame);
-      const hoverFlight = frame.hover >= 0 ? flights[frame.hover] : null;
-      this.drawAirports(frame.airports, hoverFlight);
+      this.drawAirports(frame.airports, frame.labels || new Set(), frame.ring || null);
     }
   }
 }
