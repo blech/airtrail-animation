@@ -2,6 +2,7 @@ import { THEMES, THEME_ORDER, resolveTheme } from './themes.js';
 import { easeToward } from './camera.js';
 import { defaultFlatView, panFor, flatFollowStep, clampPan } from './flatcamera.js';
 import { loadFlights, loadLand } from './data.js';
+import { loadUmd } from './umd.js';
 import { airportStats, airportLabels, computeStats } from './stats.js';
 import { buildSchedule, locate } from './clock.js';
 import { resolveMarks, ringAirports } from './marks.js';
@@ -32,8 +33,11 @@ function applyTheme(id, renderer) {
 
 async function main() {
   const canvas = document.getElementById('globe');
-  const [land, flights] = await Promise.all([loadLand(), loadFlights()]);
-  const renderer = new FlatRenderer(canvas, land);
+  const [land, flights, polygon] = await Promise.all([
+    loadLand(), loadFlights(), loadUmd('vendor/d3-geo-polygon.min.js', () => window.d3),
+  ]);
+  // d3-geo-polygon's version clips lines and land at the interruptions; d3-geo-projection's alone doesn't
+  const renderer = new FlatRenderer(canvas, land, polygon.geoInterruptedHomolosine);
   const view = defaultFlatView();
 
   const select = document.getElementById('theme');
