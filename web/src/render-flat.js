@@ -6,14 +6,15 @@ const CRUISE_M = 11000;
 const AIR_PX = 5;            // screen-space height of the plane dot above its shadow at cruise
 const JUMP = 0.25;           // a step longer than this (in projection radii) crosses an interruption
 
-// Same drawing as the globe, on d3.geoInterruptedHomolosine. Everything is always on the map, so there's
+// Same drawing as the globe, on an interrupted Goode homolosine (`projection` is a factory for it, clipped
+// at the interruptions: see main-flat.js). Everything is always on the map, so there's
 // no far side to hide and no radial lift; the only thing to watch for is lines crossing an interruption.
 export class FlatRenderer extends GlobeRenderer {
-  constructor(canvas, land) {
+  constructor(canvas, land, projection) {
     super(canvas, land);
-    this.proj = window.d3.geoInterruptedHomolosine().precision(0.3);
+    this.proj = projection().precision(0.3);
     this.path = window.d3.geoPath(this.proj, this.ctx);
-    this.unit = window.d3.geoInterruptedHomolosine().scale(1).translate([0, 0]);
+    this.unit = projection().scale(1).translate([0, 0]);
     const [[x0, y0], [x1, y1]] = window.d3.geoPath(this.unit).bounds({ type: 'Sphere' });
     this.unitW = x1 - x0;
     this.unitH = y1 - y0;
