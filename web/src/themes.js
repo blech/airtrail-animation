@@ -20,10 +20,26 @@ export const THEMES = {
     glow: 'rgba(120,170,220,0.25)', outline: 'rgba(160,200,240,0.35)',
     ui: { fg: '#e8eef4', muted: '#8fa3b5', panel: 'rgba(11,22,32,0.75)', accent: '#ffd089' },
   },
+  // Colours taken from the AirTrail app (src/app.css and the OpenFreeMap positron/dark basemap styles):
+  // land is the style's background, ocean its water fill, trails the app's primary blue, airports its emerald.
+  airtrailLight: {
+    id: 'airtrailLight', label: 'AirTrail Light',
+    bg: '#ffffff', ocean: '#c2c8ca', land: '#f2f3f0', coast: '#c2c8ca',
+    trail: '59,130,246', settledAlpha: 0.35, activeAlpha: 0.95, dot: '#10b981',
+    glow: null, outline: null,
+    ui: { fg: '#09090b', muted: '#71717a', panel: 'rgba(255,255,255,0.85)', accent: '#3b82f6' },
+  },
+  airtrailDark: {
+    id: 'airtrailDark', label: 'AirTrail Dark',
+    bg: '#09090b', ocean: '#1b1b1d', land: '#0c0c0c', coast: '#1b1b1d',
+    trail: '59,130,246', settledAlpha: 0.4, activeAlpha: 0.95, dot: '#10b981',
+    glow: null, outline: null,
+    ui: { fg: '#fafafa', muted: '#a1a1aa', panel: 'rgba(9,9,11,0.8)', accent: '#3b82f6' },
+  },
 };
 
 export const DEFAULT_THEME = 'paper';
-export const THEME_ORDER = ['paper', 'night', 'natural'];
+export const THEME_ORDER = ['paper', 'night', 'natural', 'airtrailLight', 'airtrailDark'];
 
 const valid = (id) => typeof id === 'string' && Object.hasOwn(THEMES, id);
 
