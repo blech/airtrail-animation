@@ -24,7 +24,7 @@ The page opens as a time-lapse: flights play in date order, each for a few secon
 - **Great circle** redraws every flight as the great-circle arc between its airports instead of the recorded track (constant speed, same timing). The readout distance is always the real distance flown.
 - **Follow** makes the camera track each flight; any manual drag or zoom switches it off.
 - Keys: `Space` play/pause, `←` `→` step between flights, `End` skip to the full state, `Home` restart.
-- Themes: Paper (default), Night, Natural. Choose in the corner, or open with `?theme=night`. The choice is remembered when storage is available.
+- Themes: Paper (default), Night, Natural, AirTrail Light and AirTrail Dark (colours taken from the AirTrail app). Choose in the corner, or open with `?theme=night` (ids: `paper`, `night`, `natural`, `airtrailLight`, `airtrailDark`). The choice is remembered when storage is available.
 - With `prefers-reduced-motion` the page opens at the final state, paused.
 
 ## Develop
