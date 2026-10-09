@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { THEMES, DEFAULT_THEME, THEME_ORDER, resolveTheme } from '../src/themes.js';
 
-test('three themes with the fields the renderer needs', () => {
-  assert.deepEqual(THEME_ORDER, ['paper', 'night', 'natural']);
+test('five themes with the fields the renderer needs', () => {
+  assert.deepEqual(THEME_ORDER, ['paper', 'night', 'natural', 'airtrailLight', 'airtrailDark']);
   for (const id of THEME_ORDER) {
     const t = THEMES[id];
     assert.equal(t.id, id);
