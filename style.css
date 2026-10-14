@@ -22,7 +22,8 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); o
 #stats { grid-area: stats; }
 #fnum { grid-area: fnum; justify-self: end; text-align: right; }
 #fsub { grid-area: fsub; justify-self: end; text-align: right; }
-#date, #fnum { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+#date, #fnum { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; }
+#fnum { font-variant-numeric: tabular-nums; }
 #stats, #fsub { color: var(--muted); font-variant-numeric: tabular-nums; }
 
 #tooltip { position: fixed; z-index: 5; pointer-events: none; padding: 6px 10px; border-radius: 8px;
@@ -57,6 +58,7 @@ button:hover, select:hover { border-color: var(--accent); }
   /* no room to mirror: "DATE · CALLSIGN", then airline · aircraft, then the running stats */
   #header { grid-template-columns: auto 1fr; column-gap: 0.3em; grid-template-areas: "date fnum" "fsub fsub" "stats stats"; }
   #date, #fnum { font-size: 22px; }
+  #date { min-width: 6.5em; } /* widest single date, so the callsign beside it doesn't shift */
   #fnum { justify-self: start; text-align: left; }
   #fnum:not(:empty)::before { content: "·"; margin-right: 0.3em; }
   #fsub { justify-self: start; text-align: left; }
