@@ -1,6 +1,6 @@
-# flightglobe
+# airtrail-animation
 
-A spinnable, animated globe of a personal flight history. It is a static page: open it from any static file server, no build step and no network access needed at runtime.
+A Claude-coded spinnable, animated globe of a personal flight history. It is a static page: open it from any static file server, no build step and no network access needed at runtime.
 
 Data is a privacy-reduced extract of an AirTrail export: flight number, airline, aircraft type, airports, times and the (simplified) track. Passengers, seats, seat classes, reasons, notes, gates, terminals and registrations are dropped.
 
@@ -34,3 +34,10 @@ The page opens as a time-lapse: flights play in date order, each for a few secon
 Pure logic (geometry, playback clock, stats, formatting, themes, camera maths) lives in DOM-free modules under `web/src/` with Node tests; `render.js`, `interaction.js`, `ui.js` and `main.js` are the browser layer. Libraries are vendored in `web/vendor/` (see its README).
 
 Design: `docs/superpowers/specs/`. Plan: `docs/superpowers/plans/`.
+
+## Deploying to GitHub Pages
+
+```
+git subtree split -P web -b gh-pages
+git push --set-upstream github gh-pages
+```
