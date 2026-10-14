@@ -100,19 +100,22 @@ export function bindUi({ state, schedule, flights, cum, getLoc, setFollow }) {
     syncPlay();
   });
 
+  // update() runs every frame; only touch the DOM when the text actually changed
+  const setText = (el, text) => { if (el.textContent !== text) el.textContent = text; };
+
   let lastCompleted = -1;
   function update() {
     const loc = getLoc();
     // top right: the flight in the air, or the one that just landed; blank before the first and at the end
     const shown = currentIndex(loc, flights.length);
     const blurb = shown >= 0 ? flightBlurb(flights[shown]) : { title: '', subtitle: '' };
-    fnumEl.textContent = blurb.title;
-    fsubEl.textContent = blurb.subtitle;
+    setText(fnumEl, blurb.title);
+    setText(fsubEl, blurb.subtitle);
 
     const T = calendarForPlayhead(schedule, state.playhead);
     // the whole span only when stopped at the very start or end; otherwise the flight's own date
     const showRange = !state.playing && (state.playhead <= 0 || state.playhead >= schedule.total);
-    dateEl.textContent = dateLabel(flights, shown, showRange);
+    setText(dateEl, dateLabel(flights, shown, showRange));
     playheadEl.style.left = `${frac(T) * 100}%`;
 
     let km = cum[loc.completed].km;
@@ -122,7 +125,7 @@ export function bindUi({ state, schedule, flights, cum, getLoc, setFollow }) {
       km += trackLengthKm(trackSlice(f.track, 0, loc.active.f));
     }
     const n = loc.completed + (loc.active ? 1 : 0);
-    statsEl.textContent = `${n} flight${n === 1 ? '' : 's'} · ${formatKm(km)} · ${airports} airport${airports === 1 ? '' : 's'}`;
+    setText(statsEl, `${n} flight${n === 1 ? '' : 's'} · ${formatKm(km)} · ${airports} airport${airports === 1 ? '' : 's'}`);
 
     if (document.activeElement !== scrub || !scrub.matches(':active')) {
       scrub.value = String(Math.round(frac(T) * SCRUB_MAX));
