@@ -283,7 +283,7 @@ def build_all(export):
 def main(argv=None):
     root = Path(__file__).resolve().parents[1]
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--input", default=str(root.parent / "airtrails" / "airtrail.json"))
+    ap.add_argument("--input", default=str(root.parent / "airtrail" / "airtrail.json"))
     ap.add_argument("--output", default=str(root / "web" / "data" / "flights.json"))
     args = ap.parse_args(argv)
     export = json.loads(Path(args.input).read_text())
