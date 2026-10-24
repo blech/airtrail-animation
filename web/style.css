@@ -1,20 +1,29 @@
 :root {
   --bg: #f4f2ee; --fg: #1a1a1a; --muted: #777; --panel: rgba(244, 242, 238, 0.85); --accent: #111;
+  --site-h: 57px; /* title bar: 48px line + 9px padding, as on blech.github.io */
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); overflow: hidden;
   font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
-#globe { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#globe { position: fixed; top: var(--site-h); left: 0; width: 100%; height: calc(100% - var(--site-h)); display: block; touch-action: none; cursor: grab; }
 #globe:active { cursor: grabbing; }
 
+/* site title bar: same size as blech.github.io, coloured from the theme */
+#site { position: fixed; top: 0; left: 0; right: 0; height: var(--site-h); z-index: 10; padding: 0 16px; background: var(--bg); }
+#site h1 { margin: 0; font-size: 36px; letter-spacing: -0.05em; line-height: 48px; padding-bottom: 9px; white-space: nowrap; overflow: hidden;
+  color: color-mix(in srgb, var(--fg) 22%, var(--bg)); }
+#site h1 a { color: inherit; text-decoration: none; }
+#site h1 a:hover { color: var(--muted); text-decoration: underline; }
+
 /* date and stats on the left, callsign and airline/aircraft mirrored on the right */
-#header { position: fixed; top: max(16px, env(safe-area-inset-top)); left: 16px; right: 16px; pointer-events: none;
+#header { position: fixed; top: calc(var(--site-h) + 8px); left: 16px; right: 16px; pointer-events: none;
   display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "date fnum" "stats fsub"; }
 #date { grid-area: date; }
 #stats { grid-area: stats; }
 #fnum { grid-area: fnum; justify-self: end; text-align: right; }
 #fsub { grid-area: fsub; justify-self: end; text-align: right; }
-#date, #fnum { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+#date, #fnum { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; }
+#fnum { font-variant-numeric: tabular-nums; }
 #stats, #fsub { color: var(--muted); font-variant-numeric: tabular-nums; }
 
 #tooltip { position: fixed; z-index: 5; pointer-events: none; padding: 6px 10px; border-radius: 8px;
@@ -42,10 +51,14 @@ button:hover, select:hover { border-color: var(--accent); }
 #theme { margin-left: auto; }
 
 @media (max-width: 520px) {
+  :root { --site-h: 41px; }
+  #site { padding: 0 12px; }
+  #site h1 { font-size: 24px; line-height: 32px; }
   #controls { padding-left: 12px; padding-right: 12px; }
   /* no room to mirror: "DATE · CALLSIGN", then airline · aircraft, then the running stats */
   #header { grid-template-columns: auto 1fr; column-gap: 0.3em; grid-template-areas: "date fnum" "fsub fsub" "stats stats"; }
   #date, #fnum { font-size: 22px; }
+  #date { min-width: 6.5em; } /* widest single date, so the callsign beside it doesn't shift */
   #fnum { justify-self: start; text-align: left; }
   #fnum:not(:empty)::before { content: "·"; margin-right: 0.3em; }
   #fsub { justify-self: start; text-align: left; }
