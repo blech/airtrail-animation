@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flight summary</title>
+  <link rel="stylesheet" href="summary.css">
+  <style>body{margin:24px;font-family:system-ui}</style>
+</head>
+<body>
+  <div id="summary"></div>
+  <script src="../vendor/d3-array.min.js"></script>
+  <script src="../vendor/d3-geo.min.js"></script>
+  <script src="../vendor/topojson-client.min.js"></script>
+  <script type="module">
+    import { mountSummary } from './summary.js';
+    mountSummary(document.getElementById('summary'));
+  </script>
+</body>
+</html>
