@@ -15,10 +15,16 @@ export function summarise(flights, period = 'all') {
   const countries = [];
   const routes = new Map();
   const airlines = new Map();
+  const lines = [];
   let km = 0;
 
   for (const f of sel) {
     km += trackLengthKm(f.track);
+    lines.push({
+      from: f.from, to: f.to,
+      // recorded track, or the plain airport pair (drawn as a great circle) when it is only approximate
+      track: f.approx ? null : f.track.map((p) => [p[0], p[1]]),
+    });
     for (const a of [f.from, f.to]) {
       airports.set(a.icao, a);
       if (a.country && !countries.includes(a.country)) countries.push(a.country); // first-visit order
@@ -36,6 +42,7 @@ export function summarise(flights, period = 'all') {
     countries,
     km,
     routes: [...routes.values()],
+    lines,
     airlines: [...airlines].map(([name, n]) => ({ name, n }))
       .sort((a, b) => b.n - a.n || a.name.localeCompare(b.name)),
   };

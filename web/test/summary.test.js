@@ -25,3 +25,11 @@ test('year filter', () => {
 });
 test('empty period', () => assert.equal(summarise(F, '2001').flights, 0));
 test('flagEmoji', () => { assert.equal(flagEmoji('GB'), '🇬🇧'); assert.equal(flagEmoji('x'), ''); });
+
+test('lines: one per flight, recorded track kept, approximate ones fall back', () => {
+  const approx = { ...fl('2019-07-01', SFO, JFK, 'UA'), approx: true };
+  const s = summarise([...F, approx]);
+  assert.equal(s.lines.length, 4);
+  assert.deepEqual(s.lines[0].track[0], [JFK.lon, JFK.lat]); // sorted by date; 2-element points
+  assert.equal(s.lines.at(-1).track, null);
+});

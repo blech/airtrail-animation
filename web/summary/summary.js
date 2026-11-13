@@ -20,6 +20,7 @@ export async function mountSummary(root, { flightsUrl = '../data/flights.json', 
   const years = yearsOf(flights);
   let period = 'all';
   let country = null;
+  let greatCircle = false;
 
   root.classList.add('fs-card');
   root.replaceChildren();
@@ -29,9 +30,13 @@ export async function mountSummary(root, { flightsUrl = '../data/flights.json', 
   map.setAttribute('viewBox', '0 0 1000 500');
   map.setAttribute('class', 'fs-map');
   map.setAttribute('role', 'img');
+  const options = el('label', { class: 'fs-option' });
+  const gcBox = el('input', { type: 'checkbox' });
+  gcBox.addEventListener('change', () => { greatCircle = gcBox.checked; render(); });
+  options.append(gcBox, ' Great circle');
   const flagsRow = el('div', { class: 'fs-flags' });
   const airlinesRow = el('ul', { class: 'fs-airlines' });
-  root.append(tabs, stats, map, flagsRow, airlinesRow);
+  root.append(tabs, stats, map, options, flagsRow, airlinesRow);
 
   // Equirectangular like a flat atlas, centred on San Francisco (-122 longitude, so the seam falls over
   // central Asia rather than the Pacific). d3 clips land and arcs at the seam for us.
@@ -61,11 +66,13 @@ export async function mountSummary(root, { flightsUrl = '../data/flights.json', 
     }));
 
     const g = [svgPath('fs-ocean', path({ type: 'Sphere' })), svgPath('fs-land', path(land))];
-    for (const r of s.routes) {
-      const line = { type: 'LineString', coordinates: [[r.from.lon, r.from.lat], [r.to.lon, r.to.lat]] };
-      const p = svgPath('fs-route', path(line));
-      const hot = country && (r.from.country === country || r.to.country === country);
-      if (country) p.classList.add(hot ? 'fs-hot' : 'fs-dim');
+    // One line per flight at low opacity, so busy corridors read darker. Great-circle mode (and
+    // flights with no usable track) draws the airport pair instead, once per distinct route.
+    const drawn = greatCircle ? s.routes.map((r) => ({ from: r.from, to: r.to, track: null })) : s.lines;
+    for (const r of drawn) {
+      const coordinates = r.track || [[r.from.lon, r.from.lat], [r.to.lon, r.to.lat]];
+      const p = svgPath('fs-route', path({ type: 'LineString', coordinates }));
+      if (country) p.classList.add(r.from.country === country || r.to.country === country ? 'fs-hot' : 'fs-dim');
       g.push(p);
     }
     for (const a of s.airports) {
