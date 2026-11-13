@@ -36,7 +36,9 @@ export async function mountSummary(root, { flightsUrl = '../data/flights.json', 
   options.append(gcBox, ' Great circle');
   const flagsRow = el('div', { class: 'fs-flags' });
   const airlinesRow = el('ul', { class: 'fs-airlines' });
-  root.append(tabs, stats, map, options, flagsRow, airlinesRow);
+  const bar = el('div', { class: 'fs-bar' });
+  bar.append(flagsRow, options);
+  root.append(tabs, stats, map, bar, airlinesRow);
 
   // Equirectangular like a flat atlas, centred on San Francisco (-122 longitude, so the seam falls over
   // central Asia rather than the Pacific). d3 clips land and arcs at the seam for us.
