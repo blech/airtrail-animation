@@ -33,8 +33,9 @@ export async function mountSummary(root, { flightsUrl = '../data/flights.json', 
   const airlinesRow = el('ul', { class: 'fs-airlines' });
   root.append(tabs, stats, map, flagsRow, airlinesRow);
 
-  // Equirectangular like a flat atlas; d3 splits arcs at the antimeridian for us.
-  const projection = window.d3.geoEquirectangular().fitExtent([[0, 0], [1000, 500]], { type: 'Sphere' });
+  // Equirectangular like a flat atlas, centred on San Francisco (-122 longitude, so the seam falls over
+  // central Asia rather than the Pacific). d3 clips land and arcs at the seam for us.
+  const projection = window.d3.geoEquirectangular().rotate([122, 0]).fitExtent([[0, 0], [1000, 500]], { type: 'Sphere' });
   const path = window.d3.geoPath(projection);
   const svgPath = (cls, d) => {
     const p = document.createElementNS(SVG, 'path');
@@ -59,7 +60,7 @@ export async function mountSummary(root, { flightsUrl = '../data/flights.json', 
       return d;
     }));
 
-    const g = [svgPath('fs-land', path(land))];
+    const g = [svgPath('fs-ocean', path({ type: 'Sphere' })), svgPath('fs-land', path(land))];
     for (const r of s.routes) {
       const line = { type: 'LineString', coordinates: [[r.from.lon, r.from.lat], [r.to.lon, r.to.lat]] };
       const p = svgPath('fs-route', path(line));
